@@ -1,0 +1,89 @@
+\begin{tikzpicture}
+  % Draw the neuron model
+  \node (neuron-model) {
+    \begin{tikzpicture}
+      % Draw the pre-neurons
+      \node (pre-neurons) {
+        \begin{tikzpicture}
+          \foreach \n in {1,...,4}{
+            \draw (0, \n*15pt) node [neuron] (pre-\n) {};
+          }
+        \end{tikzpicture}
+      };
+
+      % Draw the post-neurons
+      \node (post-neurons) [right=150pt of pre-neurons] {
+        \begin{tikzpicture}
+          \foreach \n in {1,...,4}{
+            \draw (0, \n*15pt) node [neuron] (post-\n) {};
+          }
+        \end{tikzpicture}
+      };
+
+      % Draw the connectivity matrix
+      \foreach \x in {1,...,4}{%
+        \foreach \y in {1,...,4}{%
+          \draw [very thick, arrows={-Triangle[]}, shorten >=4pt]
+                (pre-\x) to (post-\y);
+        }
+      }
+    \end{tikzpicture}
+  };
+
+  % Draw a simplified representation of SpiNNaker
+  \node (spinnaker) [below=10pt of neuron-model.south] {
+    \begin{tikzpicture}
+      % Only draw two cores
+      \begin{scope}[minimum width=40pt, minimum height=40pt]
+        \node (core0) [core border] {};
+        \node (core1) [core border, right=80pt of core0] {};
+      \end{scope}
+
+      % Add some links
+      \foreach \c in {0, 1}{
+        \draw [core border] (core\c.north) -- ++(0, 10pt);
+        \draw [core border, line cap=rect]
+          (core\c.north east) -- ++(5pt, 5pt);
+        \draw [core border] (core\c.south) -- ++(0, -10pt);
+        \draw [core border, line cap=rect]
+          (core\c.south west) -- ++(-5pt, -5pt);
+      }
+      \draw [core border] (core0.west) -- ++(-10pt, 0);
+      \draw [core border] (core1.east) -- ++(10pt, 0);
+      \draw [core border] (core0.east) -- (core1.west)
+        node [midway, coordinate] (network) {};
+    \end{tikzpicture}
+  };
+
+  % Show the mapping processing
+  % Neurons to processing cores
+  \onslide<2-> {
+    % Population 0 to core 0
+    \draw [rounded corners, line width=5pt, uompurple]
+          (pre-neurons.south west) rectangle (pre-neurons.north east);
+    \draw [line width=2.5pt, uompurple, arrows={-Triangle[]}] (pre-neurons.south) to (core0);
+  }
+  \onslide<3-> {
+    % Population 1 to core 1
+    \draw [rounded corners, line width=5pt, uompurple]
+          (post-neurons.south west) rectangle (post-neurons.north east);
+    \draw [line width=2.5pt, uompurple, arrows={-Triangle[]}] (post-neurons.south) to (core1);
+  }
+
+  % Connectivity to routing
+  \onslide<4-> {
+    \path (pre-neurons) -- (post-neurons) node [midway, coordinate] (mid_conn) {};
+    \node at (mid_conn) [line width=5pt, draw, circle, uomyellow,
+                         minimum height=60pt, minimum width=60pt] (highlight conn) {};
+  }
+  \onslide<5-> {
+    \draw [line width=2.5pt, uomyellow, arrows={-Triangle[]}, shorten >=3pt]
+      (highlight conn) to (network);
+  }
+
+  % Connectivity to weight matrix
+  \onslide<6-> {
+    \draw [line width=2.5pt, uomyellow, arrows={-Triangle[]}]
+      (highlight conn) to (core1);
+  }
+\end{tikzpicture}

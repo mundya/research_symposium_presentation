@@ -1,0 +1,234 @@
+\documentclass[t]{beamer}
+\usetheme[darktitle, framenumber, totalframenumber]{UniversityOfManchester}
+\usepackage{sourcesanspro}
+
+\usepackage{adjustbox}
+
+\title{Real-time brain modelling with~SpiNNaker}
+\subtitle{Research Symposium 2015}
+\author{Andrew Mundy}
+
+% Drawing
+\usepackage{tikz}
+\tikzstyle{every picture}+=[remember picture]
+\tikzstyle{na}=[baseline=-.5ex]
+\usetikzlibrary{arrows.meta, decorations.pathmorphing, positioning, shapes, topaths}
+\tikzset{
+  neuron/.style = {draw, very thick, fill=uomgrey, circle, text width=5pt,
+                   text height=5pt, inner sep=0pt},
+  box/.style = {draw, very thick},
+  core/.style = {inner sep=10pt},
+  core border/.style = {draw=black!15!white, line width=5pt},
+  link/.style = {very thick, arrows={-Triangle[]}, shorten >=1pt},
+  packet/.style = {ultra thick, draw, text height=10pt, text width=10pt,
+                   inner sep=0pt},
+  causal/.style = {line width=2.5pt, uompurple, shorten >=2pt,
+                   arrows={-Triangle[]}},
+}
+\input{figures/algorithm_diagram}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}{How to build a brain?}
+  % Hypothesis -> Predictions (computational experiments) -> Test hypothesis
+  %  - Computational experiments are expensive
+  %  - SpiNNaker *should* make this cheaper...
+\end{frame}
+
+\begin{frame}{How to simulate a brain?}
+  % Explain type of neural model
+  %  - Point spiking neurons
+  %  - Connection weight matrix + synaptic dynamics
+  % Exploit parallelism: map neural models onto SpiNNaker
+  \centering
+  \vfill
+  \input{figures/neuron_mapping}
+  \vfill
+\end{frame}
+
+\begin{frame}{How to simulate a neural net?}
+  % Neural processing on SpiNNaker: how to
+  \begin{minipage}{1.2\textwidth}
+    \centering
+    \hspace{-5.2em}
+    \begin{adjustbox}{scale=.9}
+      \spikeexample
+    \end{adjustbox}
+  \end{minipage}
+
+  \vskip\baselineskip
+
+  % Step by step operation
+  \only<2>{\large
+    \tikz[na] \node [coordinate] (n0) {};%
+    Simulate neurons\\
+    Send ``spike'' packets over the network%
+      \tikz[na] \node [coordinate] (p0) {};
+  }
+  \only<3>{\large
+    Receive ``spike'' packets, \tikz[na] \node [coordinate] (r0) {};\\
+    look up synaptic weights \tikz[na] \node [coordinate] (r1) {};
+  }
+  \only<4>{\large
+    Insert weights into ring buffers%
+    \tikz[na] \node [coordinate] (i0) {};
+  }
+
+  % Progressively add labels to this diagram
+  \begin{tikzpicture}[overlay, arrows={-Triangle[]}, shorten >=2pt,
+                      shorten <= 2pt, ultra thick, uompurple, na]
+    % Neuron update
+    \draw<2> [out=180, in=-135] (n0.center) to (A_1.south west);
+    \draw<2> [out=45, in=-45, shorten >=6pt] (p0.center) to (sp2);
+
+    % Receive spike packets
+    \draw <3> [shorten >= 0, out=60, in=-105] (r0.center) to
+      ([xshift=-.25em, yshift=-.5em] sp4.south);
+    \draw <3> [shorten >= 0, out=25, in=-105] (r1.center) to
+      ([xshift=-15pt, yshift=20pt] B_weights.south);
+
+    % Insert into ring buffers
+    \draw <4> [out=0, in=265] (i0) to
+      ([xshift=-2em, yshift=-.5em] B_ringbuffer_1);
+  \end{tikzpicture}
+\end{frame}
+
+% Constraints model - show how the NEF makes this very hard
+\begin{frame}{Not so easy\ldots}
+  \begin{columns}[c]
+    \begin{column}{.35\textwidth}%
+      % Stack diagram indicating constraints
+      \include{figures/spike-constraints}
+    \end{column}\hfill
+    \begin{column}{.62\textwidth}
+      \begin{itemize}
+        \item \tikz[na]\node [coordinate] (n0) {};Limited SDRAM access bandwidth
+        \item \tikz[na]\node [coordinate] (n1) {};DTCM small
+        \item \tikz[na]\node [coordinate] (n2) {};Real-time constraints
+        \item \tikz[na]\node [coordinate] (n3) {};Network utilisation
+      \end{itemize}
+
+      \onslide<6>{\textbf{NEF is not a good fit for SpiNNaker as designed\ldots}}
+      \begin{itemize}
+        \item<6> Dense weight matrices
+        \item<6> High firing rates
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  % Progressively add labels to this diagram to indicate what the constraints
+  % are.
+  \begin{tikzpicture}[overlay, arrows={-Triangle[]}, shorten >=2pt,
+                      shorten <= 5pt, ultra thick, uompurple]
+    % SDRAM access
+    \draw<2> [out=180, in=45] ([xshift=-2ex] n0) to (sdramlink2);
+    \draw<3> [out=180, in=0] ([xshift=-2ex] n1) to (dtcm2.east);
+    \draw<4> [out=180, in=45] ([xshift=-2ex] n2) to (core2.east);
+    \draw<5> [out=180, in=45] ([xshift=-2ex] n3) to
+                              ([xshift=20pt, yshift=-15pt] core2.south);
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}{\ldots use factored weight matrices}
+  % Weight matrix can be factored
+
+  % Changes to the algorithm
+  \begin{minipage}{1.2\textwidth}
+    \centering
+    \hspace{-5.2em}
+    \begin{adjustbox}{scale=.9}
+      \valueexample
+    \end{adjustbox}
+  \end{minipage}
+
+  \vskip\baselineskip
+
+  {\large
+    \only<2>{
+      \tikz[na] \node [coordinate] (n0) {};%
+      Simulate neurons \\
+      Multiply spikes by the ``decoder'' matrix \tikz[na] \node [coordinate] (n1) {};
+    }
+    \only<3>{
+      Transmit each resulting component \tikz[na] \node [coordinate] (t0) {};
+    }
+    \only<4>{
+      Apply the synaptic filter \tikz[na] \node [coordinate] (f0) {};
+    }
+    \only<5>{
+      Multiply the vector by the ``encoder'' matrix \tikz[na] \node [coordinate] (e0) {};
+    }
+  }
+
+  % Progressively add labels to this diagram
+  \begin{tikzpicture}[overlay, arrows={-Triangle[]}, shorten >=2pt,
+                      shorten <= 2pt, ultra thick, uompurple, na]
+    % Neuron update
+    \draw<2> [out=180, in=-135] (n0.center) to (A_1.south west);
+    \draw<2> [out=45, in=-45, shorten >=6pt] (n1.center) to (A_decoder);
+
+    % Transmit value packets
+    \draw <3> [shorten >= 0, out=60, in=-60] (t0.center) to
+      ([xshift=-1em, yshift=-1em] val1.south);
+
+    % Receive and apply synaptic filter
+    \draw <4> [shorten >= 0, out=0, in=-90] (f0.center) to
+      ([xshift=-1em, yshift=-.5em] B_filter.south);
+
+    % Encode to form neuron inputs
+    \draw <5> [shorten >= 0, out=25, in=-60] (e0.center) to
+      ([xshift=-1.5em, yshift=1em] B_encoder.south);
+  \end{tikzpicture}
+\end{frame}
+
+% Constraints model - how do factored weight matrices make this better
+\begin{frame}{The benefits\ldots}
+  \begin{columns}[c]
+    \begin{column}{.35\textwidth}%
+      % Stack diagram indicating constraints
+      \include{figures/spike-constraints}
+    \end{column}\hfill
+    \begin{column}{.62\textwidth}
+      \begin{itemize}
+        \item Significant memory savings
+        \begin{itemize}
+          \item<2-> Upwards of 90\%
+        \end{itemize}
+        \item Reduced compute
+        \begin{itemize}
+          \item<3-> $2\times$ neurons per core
+        \end{itemize}
+        \item Less network traffic
+        \begin{itemize}
+          \item<4-> Vector size $\ll$ number of neurons
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{darkframes}
+  \begin{frame}{\hspace{1em}}
+    \centering
+    \vfill
+    {\huge Demo}
+    \vfill
+  \end{frame}
+\end{darkframes}
+
+\begin{frame}{In conclusion\ldots}
+  
+\end{frame}
+
+\begin{darkframes}
+  \begin{frame}{\hspace{1em}}
+    \centering
+    \vfill
+    {\huge Thank you}
+    \vfill
+  \end{frame}
+\end{darkframes}
+  
+\end{document}

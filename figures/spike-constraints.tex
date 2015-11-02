@@ -1,0 +1,57 @@
+\begin{tikzpicture}
+  % Clip all the following drawing by this rectangle
+  \clip (13pt, -25pt) rectangle ++(140pt, 160pt);
+
+  % Processing cores
+  \begin{scope}[core border, text width=30pt, text height=30pt]
+    \node (0, 0) [anchor=south west, draw] (core1) {};
+    \node [draw, right=40pt of core1] (core2) {};
+  \end{scope}
+
+  % DTCMs
+  \begin{scope}[core border, text width=60pt, text height=20pt]
+    \foreach \n in {1, 2}
+    {
+      \node [draw, above=20pt of core\n] (dtcm\n)
+      {
+      };
+    }
+    \path (dtcm1) -- (dtcm2) node [midway] (middtcm) {};
+  \end{scope}
+
+  % SDRAM
+  \node [core border, text width=160pt, text height=40pt,
+         above=20pt of middtcm] (sdram) {};
+
+  % Draw synaptic weight matrices in SDRAM and synaptic rows in DTCM
+  \foreach \n/\w in {1/5, 2/7}
+  {
+    \node [above=25pt of dtcm\n]
+    {
+      \begin{tikzpicture}
+        \draw [very thick, step=7.5pt] (0, 0) grid ++(\w*7.5pt, 12*7.5pt);
+      \end{tikzpicture}
+    };
+
+    \node at (dtcm\n)
+    {
+      \begin{tikzpicture}
+        \draw [very thick, step=7.5pt] (0, 0) grid ++(\w*7.5pt, 7.5pt);
+      \end{tikzpicture}
+    };
+  }
+
+  % Draw links between elements in the memory hierarchy
+  \foreach \n in {1, 2}
+  {
+    \draw [line width=7.5pt] (core\n.north) -- (dtcm\n.south);
+    \draw [line width=1.5pt] (dtcm\n.north) -- (dtcm\n.north |- sdram.south)
+      node [midway, coordinate] (sdramlink\n) {};
+  }
+
+  % Network fabric
+  \draw [line width=1pt, arrows={-Triangle[]}]
+    (core1.south) |- ([xshift=40pt, yshift=-20pt] core2.south);
+  \draw [line width=1pt] (core2.south) -- ++(0, -20pt);
+  \draw [line width=1pt] ([yshift=-20pt] core1.south) -- ++(-15pt, 0);
+\end{tikzpicture}
