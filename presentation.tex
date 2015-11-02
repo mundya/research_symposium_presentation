@@ -132,6 +132,38 @@
 \end{frame}
 
 \begin{frame}{\ldots use factored weight matrices}
+  % Diagram to show factoring of the weight matrix
+  \centering
+  \vfill
+  {\Large Useful property of the NEF:}
+  \vfill
+  \begin{tikzpicture}
+    \node (unfactored) [label=below:Weight matrix] {
+      \begin{tikzpicture}
+        \drawmatrix{0, 0}{4}{4};
+      \end{tikzpicture}
+    };
+
+    \node [right=of unfactored] (equals) {$\equiv$};
+
+    \node (encoder) [right=of equals, label=below:Encoder] {
+      \begin{tikzpicture}
+        \drawmatrix{0, 0}{1}{4};
+      \end{tikzpicture}
+    };
+
+    \node [right=of encoder] (times) {$\times$};
+
+    \node (decoder) [right=of times, label=below:Decoder] {
+      \begin{tikzpicture}
+        \drawmatrix{0, 0}{4}{1};
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
+  \vfill
+\end{frame}
+
+\begin{frame}{Change the algorithm\ldots}
   % Weight matrix can be factored
 
   % Changes to the algorithm
