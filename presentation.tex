@@ -27,6 +27,8 @@
 }
 \input{figures/algorithm_diagram}
 
+\usepackage{siunitx}
+
 \begin{document}
 
 \maketitle
@@ -35,6 +37,43 @@
   % Hypothesis -> Predictions (computational experiments) -> Test hypothesis
   %  - Computational experiments are expensive
   %  - SpiNNaker *should* make this cheaper...
+  \begin{columns}[T]
+    \begin{column}{.55\textwidth}
+      \begin{tikzpicture}
+        \node at (90:30pt) [anchor=south] (hypothesis) {
+          \includegraphics[width=140pt]{figures/spaun}
+        };
+        \node at (90-120:30pt) [anchor=north west] (simulation) {
+          \includegraphics[width=60pt]{figures/spinnaker}
+        };
+        \node at (90-240:30pt) [anchor=north east] (comparator) {
+          Biology
+        };
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{.44\textwidth}
+      \textbf{Spaun}
+      \begin{itemize}
+        \item \num{2.5}~M neurons
+        \item \SI{2.5}{\hour} per second of simulation
+      \end{itemize}
+
+      \textbf{SpiNNaker} \textit{should} reduce this cost...
+      \begin{itemize}
+        \item Larger models
+        \item Real-world interaction
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  % Add some labels, linking the items together
+  \begin{tikzpicture}[overlay]
+    \begin{scope}[uompurple, line width=3pt, arrows={-Triangle[]}, bend left]
+      \draw (hypothesis) to (simulation);
+      \draw (simulation) to (comparator);
+      \draw (comparator) to (hypothesis.south);
+    \end{scope}
+  \end{tikzpicture}
 \end{frame}
 
 \begin{frame}{How to simulate a brain?}
